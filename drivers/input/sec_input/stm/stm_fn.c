@@ -519,9 +519,9 @@ int stm_ts_wait_for_echo_event(struct stm_ts_data *ts, u8 *cmd, u8 cmd_cnt, int 
 	}
 
 	if (delay)
-		sec_delay(delay);
+		sec_delay(delay + 100);
 	else
-		sec_delay(5);
+		sec_delay(100);
 
 	memset(data, 0x0, STM_TS_EVENT_BUFF_SIZE);
 

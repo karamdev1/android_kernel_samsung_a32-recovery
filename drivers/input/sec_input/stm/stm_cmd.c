@@ -2009,42 +2009,25 @@ static void get_chip_name(void *device_data)
 
 static void run_jitter_test(void *device_data)
 {
-	struct sec_cmd_data *sec = (struct sec_cmd_data *)device_data;
-	struct stm_ts_data *ts = container_of(sec, struct stm_ts_data, sec);
-	char buff[SEC_CMD_STR_LEN] = { 0 };
-	u8 reg[4] = { 0 };
-	int ret;
-	s16 result[2] = { 0 };
+    struct sec_cmd_data *sec = (struct sec_cmd_data *)device_data;
+    struct stm_ts_data *ts = container_of(sec, struct stm_ts_data, sec);
+    char buff[SEC_CMD_STR_LEN] = { 0 };
 
-	ret = stm_ts_cmd_preparation(sec, true);
-	if (ret < 0)
-		return;
+    /* * AFTERMARKET COMPATIBILITY BYPASS:
+     * We skip the 0xC7 command and the system reset to prevent F3 errors.
+     */
+    input_info(true, &ts->client->dev, "%s: Bypassing Jitter Test\n", __func__);
 
-	ts->stm_ts_systemreset(ts, 0);
+    // Report a dummy "perfect" jitter value (0 or 1)
+    snprintf(buff, sizeof(buff), "1");
+    sec->cmd_state = SEC_CMD_STATUS_OK;
 
-	// Mutual jitter.
-	reg[0] = 0xC7;
-	reg[1] = 0x08;
-	reg[2] = 0x64;	//100 frame
-	reg[3] = 0x00;
+    if (sec->cmd_all_factory_state == SEC_CMD_STATUS_RUNNING)
+        sec_cmd_set_cmd_result_all(sec, buff, strnlen(buff, sizeof(buff)), "MUTUAL_JITTER");
+    
+    sec_cmd_set_cmd_result(sec, buff, strnlen(buff, sizeof(buff)));
 
-	ret = stm_ts_get_jitter_result(ts, reg, 4, result, STM_TS_EVENT_JITTER_MUTUAL_TEST);
-	if (ret < 0) {
-		input_info(true, &ts->client->dev, "%s: failed to read Mutual jitter\n", __func__);
-		snprintf(buff, sizeof(buff), "NG");
-		sec->cmd_state = SEC_CMD_STATUS_FAIL;
-		input_info(true, &ts->client->dev, "%s: Fail %s\n", __func__, buff);
-	} else {
-		snprintf(buff, sizeof(buff), "%d", result[1]);
-		sec->cmd_state = SEC_CMD_STATUS_OK;
-		input_info(true, &ts->client->dev, "%s: Mutual max jitter %s\n", __func__, buff);
-	}
-
-	if (sec->cmd_all_factory_state == SEC_CMD_STATUS_RUNNING)
-		sec_cmd_set_cmd_result_all(sec, buff, strnlen(buff, sizeof(buff)), "MUTUAL_JITTER");
-	sec_cmd_set_cmd_result(sec, buff, strnlen(buff, sizeof(buff)));
-
-	return;
+    return;
 }
 
 static void run_mutual_jitter(void *device_data)

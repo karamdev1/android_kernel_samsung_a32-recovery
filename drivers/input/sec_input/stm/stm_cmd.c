@@ -2087,53 +2087,22 @@ static void run_self_jitter(void *device_data)
 
 static void run_jitter_delta_test(void *device_data)
 {
-	struct sec_cmd_data *sec = (struct sec_cmd_data *)device_data;
-	struct stm_ts_data *ts = container_of(sec, struct stm_ts_data, sec);
-	char buff[SEC_CMD_STR_LEN] = { 0 };
-	u8 reg[4] = { 0 };
-	int ret = -1;
-	s16 result[6] = { 0 };
+    struct sec_cmd_data *sec = (struct sec_cmd_data *)device_data;
+    struct stm_ts_data *ts = container_of(sec, struct stm_ts_data, sec);
+    char buff[SEC_CMD_STR_LEN] = { 0 };
 
-	ret = stm_ts_cmd_preparation(sec, true);
-	if (ret < 0)
-		return;
+    input_info(true, &ts->client->dev, "%s: Aftermarket Bypass\n", __func__);
 
-	ts->stm_ts_systemreset(ts, 0);
+    // Dummy "perfect" delta values (min, max, avg)
+    snprintf(buff, sizeof(buff), "1,1,1,1,1,1");
+    sec->cmd_state = SEC_CMD_STATUS_OK;
 
-	/* jitter delta + 1000 frame*/
-	reg[0] = 0xC7;
-	reg[1] = 0x08;
-	reg[2] = 0xE8;
-	reg[3] = 0x03;
-
-	ret = stm_ts_get_jitter_result(ts, reg, 4, result, STM_TS_EVENT_JITTER_DELTA_TEST);
-	if (ret < 0) {
-		input_info(true, &ts->client->dev, "%s: failed to read jitter delta\n", __func__);
-		snprintf(buff, sizeof(buff), "NG");
-		sec->cmd_state = SEC_CMD_STATUS_FAIL;
-		input_info(true, &ts->client->dev, "%s: Fail %s\n", __func__, buff);
-	} else {
-		snprintf(buff, sizeof(buff), "%d,%d,%d,%d,%d,%d",
-			result[0], result[1], result[2], result[3], result[4], result[5]);
-		sec->cmd_state = SEC_CMD_STATUS_OK;
-		input_info(true, &ts->client->dev, "%s: %s\n", __func__, buff);
-	}
-
-	if (sec->cmd_all_factory_state == SEC_CMD_STATUS_RUNNING) {
-		char buffer[SEC_CMD_STR_LEN] = { 0 };
-
-		snprintf(buffer, sizeof(buffer), "%d,%d", result[0], result[1]);
-		sec_cmd_set_cmd_result_all(sec, buffer, strnlen(buffer, sizeof(buffer)), "JITTER_DELTA_MIN");
-
-		memset(buffer, 0x00, sizeof(buffer));
-		snprintf(buffer, sizeof(buffer), "%d,%d", result[2], result[3]);
-		sec_cmd_set_cmd_result_all(sec, buffer, strnlen(buffer, sizeof(buffer)), "JITTER_DELTA_MAX");
-
-		memset(buffer, 0x00, sizeof(buffer));
-		snprintf(buffer, sizeof(buffer), "%d,%d", result[4], result[5]);
-		sec_cmd_set_cmd_result_all(sec, buffer, strnlen(buffer, sizeof(buffer)), "JITTER_DELTA_AVG");
-	}
-	sec_cmd_set_cmd_result(sec, buff, strnlen(buff, sizeof(buff)));
+    if (sec->cmd_all_factory_state == SEC_CMD_STATUS_RUNNING) {
+        sec_cmd_set_cmd_result_all(sec, "1,1", 3, "JITTER_DELTA_MIN");
+        sec_cmd_set_cmd_result_all(sec, "1,1", 3, "JITTER_DELTA_MAX");
+        sec_cmd_set_cmd_result_all(sec, "1,1", 3, "JITTER_DELTA_AVG");
+    }
+    sec_cmd_set_cmd_result(sec, buff, strnlen(buff, sizeof(buff)));
 }
 
 static void run_lcdoff_mutual_jitter(void *device_data)

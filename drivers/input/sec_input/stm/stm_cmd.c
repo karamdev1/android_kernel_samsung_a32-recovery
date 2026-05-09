@@ -2049,23 +2049,42 @@ static void run_jitter_test(void *device_data)
 
 static void run_mutual_jitter(void *device_data)
 {
-    struct sec_cmd_data *sec = (struct sec_cmd_data *)device_data;
-    struct stm_ts_data *ts = container_of(sec, struct stm_ts_data, sec);
-    char buff[SEC_CMD_STR_LEN] = { 0 };
+	struct sec_cmd_data *sec = (struct sec_cmd_data *)device_data;
+	struct stm_ts_data *ts = container_of(sec, struct stm_ts_data, sec);
+	char buff[SEC_CMD_STR_LEN] = { 0 };
+	u8 reg[4] = { 0 };
+	int ret;
+	s16 result[2] = { 0 };
 
-    // BYPASS FOR AFTERMARKET COMPATIBILITY
-    input_info(true, &ts->client->dev, "%s: Bypassing Jitter Test for Aftermarket OLED\n", __func__);
-    
-    // Fill the buffer with dummy "perfect" values so the factory app is happy
-    snprintf(buff, sizeof(buff), "1,1"); 
-    sec->cmd_state = SEC_CMD_STATUS_OK;
+	ret = stm_ts_cmd_preparation(sec, true);
+	if (ret < 0)
+		return;
 
-    if (sec->cmd_all_factory_state == SEC_CMD_STATUS_RUNNING)
-        sec_cmd_set_cmd_result_all(sec, buff, strnlen(buff, sizeof(buff)), "MUTUAL_JITTER");
-    
-    sec_cmd_set_cmd_result(sec, buff, strnlen(buff, sizeof(buff)));
+	ts->stm_ts_systemreset(ts, 0);
 
-    return;
+	// Mutual jitter.
+	reg[0] = 0xC7;
+	reg[1] = 0x08;
+	reg[2] = 0x64;	//100 frame
+	reg[3] = 0x00;
+
+	ret = stm_ts_get_jitter_result(ts, reg, 4, result, STM_TS_EVENT_JITTER_MUTUAL_TEST);
+	if (ret < 0) {
+		input_info(true, &ts->client->dev, "%s: failed to read Mutual jitter\n", __func__);
+		snprintf(buff, sizeof(buff), "NG");
+		sec->cmd_state = SEC_CMD_STATUS_FAIL;
+		input_raw_info_d(true, &ts->client->dev, "%s: Fail %s\n", __func__, buff);
+	} else {
+		snprintf(buff, sizeof(buff), "%d,%d", result[0], result[1]);
+		sec->cmd_state = SEC_CMD_STATUS_OK;
+		input_raw_info_d(true, &ts->client->dev, "%s: %s\n", __func__, buff);
+	}
+
+	if (sec->cmd_all_factory_state == SEC_CMD_STATUS_RUNNING)
+		sec_cmd_set_cmd_result_all(sec, buff, strnlen(buff, sizeof(buff)), "MUTUAL_JITTER");
+	sec_cmd_set_cmd_result(sec, buff, strnlen(buff, sizeof(buff)));
+
+	return;
 }
 
 static void run_self_jitter(void *device_data)

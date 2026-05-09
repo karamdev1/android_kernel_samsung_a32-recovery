@@ -585,25 +585,19 @@ int stm_ts_wait_for_echo_event(struct stm_ts_data *ts, u8 *cmd, u8 cmd_cnt, int 
 
 int stm_ts_set_scanmode(struct stm_ts_data *ts, u8 scan_mode)
 {
-    // We force 0x01 which is "Active/Sensing" mode
-    u8 address[3] = { 0xA0, 0x00, 0x01 }; 
-    int rc;
+	u8 address[3] = { 0xA0, 0x00, scan_mode };
+	int rc;
 
-    /* * AFTERMARKET BYPASS: 
-     * We write the command directly. We don't wait for the echo 
-     * because the aftermarket chip sends 0x62 instead of echoing 0xA0.
-     */
-    rc = ts->stm_ts_write(ts, &address[0], 3, NULL, 0);
-    
-    if (rc < 0) {
-        input_err(true, &ts->client->dev, "%s: I2C Write Failed, ret = %d\n", __func__, rc);
-        // We still return 0 because we want the driver to stay alive!
-        return 0; 
-    }
+	rc = stm_ts_wait_for_echo_event(ts, &address[0], 3, 20);
+	if (rc < 0) {
+		input_info(true, &ts->client->dev, "%s: timeout, ret = %d\n", __func__, rc);
+		return rc;
+	}
 
-    input_info(true, &ts->client->dev, "%s: Forced Active Mode 0x01 (Aftermarket Fix)\n", __func__);
+	input_info(true, &ts->client->dev, "%s: 0x%02X\n", __func__, scan_mode);
 
-    return 0;
+	return 0;
+
 }
 
 /* optional reg : SEC_TS_CMD_LPM_AOD_OFF_ON(0x9B)	*/

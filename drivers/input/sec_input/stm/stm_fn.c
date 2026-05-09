@@ -432,7 +432,7 @@ int stm_ts_wait_for_ready(struct stm_ts_data *ts)
 
 	rc = -1;
 	while (ts->stm_ts_read(ts, &address, 1, (u8 *)data, STM_TS_EVENT_BUFF_SIZE) >= 0) {
-		/*p_event_status = (struct stm_ts_event_status *) &data[0];
+		p_event_status = (struct stm_ts_event_status *) &data[0];
 
 		if ((p_event_status->stype == STM_TS_EVENT_STATUSTYPE_INFO) &&
 				(p_event_status->status_id == STM_TS_INFO_READY_STATUS)) {
@@ -484,9 +484,7 @@ int stm_ts_wait_for_ready(struct stm_ts_data *ts)
 				schedule_delayed_work(&ts->reset_work, msecs_to_jiffies(10));
 			break;
 		}
-		sec_delay(20);*/
-
-		continue;
+		sec_delay(20);
 	}
 
 	input_info(true, &ts->client->dev,
@@ -560,13 +558,11 @@ int stm_ts_wait_for_echo_event(struct stm_ts_data *ts, u8 *cmd, u8 cmd_cnt, int 
 				break;
 			}
 		} else if (data[0] == STM_TS_EVENT_ERROR_REPORT) {
-			input_info(true, &ts->client->dev, "%s: Aftermarket Fake Echo (0xF3)\n", __func__);
-    
-			/* BYPASS: We treat the error report as a "Matched" command 
-			so the driver thinks the command was successful. */
-			rc = 0; 
-			matched = true;
-			break;
+			input_info(true, &ts->client->dev, "%s: Error detected %02X,%02X,%02X,%02X,%02X,%02X\n",
+				__func__, data[0], data[1], data[2], data[3], data[4], data[5]);
+
+			if (retry >= STM_TS_RETRY_COUNT)
+				break;
 		}
 
 		if (retry++ > STM_TS_RETRY_COUNT * 50) {

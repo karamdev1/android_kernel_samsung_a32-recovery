@@ -2107,20 +2107,102 @@ static void run_jitter_delta_test(void *device_data)
 
 static void run_lcdoff_mutual_jitter(void *device_data)
 {
-    struct sec_cmd_data *sec = (struct sec_cmd_data *)device_data;
-    struct stm_ts_data *ts = container_of(sec, struct stm_ts_data, sec);
-    char buff[SEC_CMD_STR_LEN] = { 0 };
+	struct sec_cmd_data *sec = (struct sec_cmd_data *)device_data;
+	struct stm_ts_data *ts = container_of(sec, struct stm_ts_data, sec);
+	char buff[SEC_CMD_STR_LEN] = { 0 };
+	u8 reg[4] = { 0 };
+	int ret;
+	s16 mutual_min = 0, mutual_max = 0;
+	u8 data[STM_TS_EVENT_BUFF_SIZE] = { 0 };
+	u8 result = 0;
+	int retry = 0;
 
-    input_info(true, &ts->client->dev, "%s: Aftermarket Bypass\n", __func__);
+	ret = stm_ts_cmd_preparation(sec, true);
+	if (ret < 0)
+		return;
 
-    // Just report OK without doing any I2C work
-    sec->cmd_state = SEC_CMD_STATUS_OK;
-    snprintf(buff, sizeof(buff), "0,1,1"); // 0 = Result OK, 1/1 = min/max
+	ts->stm_ts_systemreset(ts, 0);
+	stm_ts_release_all_finger(ts);
 
-    if (sec->cmd_all_factory_state == SEC_CMD_STATUS_RUNNING)
-        sec_cmd_set_cmd_result_all(sec, buff, strnlen(buff, sizeof(buff)), "LCDOFF_MUTUAL_JITTER");
-    
-    sec_cmd_set_cmd_result(sec, buff, strnlen(buff, sizeof(buff)));
+	ret = stm_ts_fix_active_mode(ts, STM_TS_ACTIVE_TRUE);
+	if (ret < 0) {
+		input_err(true, &ts->client->dev, "%s: failed to set active mode\n", __func__);
+		goto ERROR;
+	}
+
+	disable_irq(ts->irq);
+	mutex_lock(&ts->fn_mutex);
+
+	// lcd off Mutual jitter.
+	reg[0] = 0xC7;
+	reg[1] = 0x0D;
+	reg[2] = 0x64;	//100 frame
+	reg[3] = 0x00;
+
+	ret = ts->stm_ts_write(ts, &reg[0], 4, NULL, 0);
+	if (ret < 0) {
+		input_err(true, &ts->client->dev, "%s: failed to write command\n", __func__);
+		mutex_unlock(&ts->fn_mutex);
+		enable_irq(ts->irq);
+		goto ERROR;
+	}
+
+	sec_delay(5);
+
+	memset(data, 0x0, STM_TS_EVENT_BUFF_SIZE);
+
+	reg[0] = STM_TS_READ_ONE_EVENT;
+	while (ts->stm_ts_read(ts, &reg[0], 1, data, STM_TS_EVENT_BUFF_SIZE) >= 0) {
+		if ((data[0] == STM_TS_EVENT_ERROR_REPORT) || (data[0] == STM_TS_EVENT_PASS_REPORT)) {
+			mutual_max = data[3] << 8 | data[2];
+			mutual_min = data[5] << 8 | data[4];
+
+			if (data[0] == STM_TS_EVENT_PASS_REPORT) {
+				sec->cmd_state = SEC_CMD_STATUS_OK;
+				result = 0;
+			} else {
+				sec->cmd_state = SEC_CMD_STATUS_FAIL;
+				result = 1;
+			}
+			break;
+		}
+
+		/* waiting 10 seconds */
+		if (retry++ > STM_TS_RETRY_COUNT * 50) {
+			input_err(true, &ts->client->dev, "%s: Time Over (%02X,%02X,%02X,%02X,%02X,%02X)\n",
+				__func__, data[0], data[1], data[2], data[3], data[4], data[5]);
+			break;
+		}
+		sec_delay(20);
+	}
+
+	mutex_unlock(&ts->fn_mutex);
+	enable_irq(ts->irq);
+
+	ts->stm_ts_systemreset(ts, 0);
+	stm_ts_set_scanmode(ts, ts->scan_mode);
+
+	snprintf(buff, sizeof(buff), "%d,%d,%d", result, mutual_min, mutual_max);
+	if (sec->cmd_all_factory_state == SEC_CMD_STATUS_RUNNING)
+		sec_cmd_set_cmd_result_all(sec, buff, strnlen(buff, sizeof(buff)), "LCDOFF_MUTUAL_JITTER");
+	sec_cmd_set_cmd_result(sec, buff, strnlen(buff, sizeof(buff)));
+	sec->cmd_state = SEC_CMD_STATUS_OK;
+
+	input_raw_info_d(ts->plat_data->support_dual_foldable, &ts->client->dev, "%s: %s\n", __func__, buff);
+
+	return;
+
+ERROR:
+	ts->stm_ts_systemreset(ts, 0);
+	stm_ts_set_scanmode(ts, ts->scan_mode);
+
+	snprintf(buff, sizeof(buff), "NG");
+	if (sec->cmd_all_factory_state == SEC_CMD_STATUS_RUNNING)
+		sec_cmd_set_cmd_result_all(sec, buff, strnlen(buff, sizeof(buff)), "LCDOFF_MUTUAL_JITTER");
+	sec_cmd_set_cmd_result(sec, buff, strnlen(buff, sizeof(buff)));
+	sec->cmd_state = SEC_CMD_STATUS_FAIL;
+
+	input_raw_info_d(ts->plat_data->support_dual_foldable, &ts->client->dev, "%s: Fail %s\n", __func__, buff);
 }
 
 static void get_wet_mode(void *device_data)

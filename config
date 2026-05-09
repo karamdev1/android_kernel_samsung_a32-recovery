@@ -1,0 +1,21 @@
+# =========================
+# Kernel Builder Config
+# =========================
+
+# --- Architecture ---
+ARCH=arm64
+
+# --- Toolchain --- Root of folder of the toolchain here
+TD=~/toolchains/clang-r383902
+
+# --- Paths ---
+BIN_PATH=${TD}/bin
+CC=${BIN_PATH}/clang
+CROSS_COMPILE=~/toolchains/aarch64-4.9/bin/aarch64-linux-android-
+CROSS_COMPILE_ARM32=~/toolchains/arm-4.9/bin/arm-linux-androideabi- # useless for gcc
+
+# --- Build output ---
+OUT_DIR=out
+
+# --- Config ---
+DEFCONFIG=a32_twrp_defconfig

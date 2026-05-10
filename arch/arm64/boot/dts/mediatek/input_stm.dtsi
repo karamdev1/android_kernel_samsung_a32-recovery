@@ -37,16 +37,20 @@
 	sec,area-size = <133 266 341>; /* indicator: 24dp navigator:48dp edge:60px dpi=320 */
 	sec,max_coords = <4096 4096>; /* x y */
 	enable_settings_aot;
+	sec,fw_update_skip; 
+    sec,skip_state_check;
+    sec,autocalibration = <0>;
 	support_dex_mode;
 	support_fod;
 	support_fod_lp_mode;
-	support_mis_calibration_test;
+	//support_mis_calibration_test;
 	support_ear_detect_mode;
 	//sync-reportrate-120;
-	support_open_short_test;
-	sec,firmware_name = "tsp_stm/fts5cu56a_a32.bin";
+	//support_open_short_test;
+	//sec,firmware_name = "tsp_stm/fts5cu56a_a32.bin";
 	sec,regulator_boot_on;
-	stm,lpmode_change_delay = <50>;
+	stm,lpmode_change_delay = <100>;
+
 };
 
 /* /home/dpi/qb5_8816/workspace/P4_1716/android/kernel/kmodule/input/sec_input/touchscreen/stm/dts/input-mtk-tsp-stm.a32.02.dtsi */

@@ -1,6 +1,6 @@
 &pio {
 	stm_attn_irq: stm_attn_irq {
-		GPIO_CONFIG_PUD(AP,pio,10, FUNC_INPUT_WAKEUP, PULL_NONE);
+		GPIO_CONFIG_PUD(AP,pio,10, FUNC_INPUT_WAKEUP, PULL_UP);
 	};
 
 	stm_attn_input: stm_attn_input {

@@ -41,10 +41,10 @@
     sec,skip_state_check;
     sec,autocalibration = <0>;
 	support_dex_mode;
-	support_fod;
-	support_fod_lp_mode;
+	//support_fod;
+	//support_fod_lp_mode;
 	//support_mis_calibration_test;
-	support_ear_detect_mode;
+	//support_ear_detect_mode;
 	//sync-reportrate-120;
 	//support_open_short_test;
 	//sec,firmware_name = "tsp_stm/fts5cu56a_a32.bin";

@@ -102,7 +102,7 @@ static ssize_t get_cmoffset_dump_v2(struct stm_ts_data *ts, char *buf, u8 positi
 
 			input_err(true, &ts->client->dev, "%s: CM%d Data empty\n", __func__, cm_num);
 			continue;
-		} else if (value != signature) {
+		} /*else if (value != signature) {
 			snprintf(buff, sizeof(buff), "CM%d : signature mismatched %08X != %08X\n", cm_num, signature, value);
 			strlcat(buf, buff, ts->proc_cmoffset_size);
 
@@ -110,7 +110,7 @@ static ssize_t get_cmoffset_dump_v2(struct stm_ts_data *ts, char *buf, u8 positi
 						__func__, cm_num, position, signature, value);
 
 			continue;
-		} else {
+		}*/ else {
 			snprintf(buff, sizeof(buff), "CM%d try cnt:%d\n", cm_num, rbuff[5]);
 			strlcat(buf, buff, ts->proc_cmoffset_size);
 
@@ -193,7 +193,7 @@ static ssize_t get_cmoffset_dump_v1(struct stm_ts_data *ts, char *buf, u8 positi
 	ret = stm_ts_wait_for_echo_event(ts, address, 4, 0);
 	if (ret < 0) {
 		snprintf(buf, ts->proc_cmoffset_size, "NG, failed to request data, %d", ret);
-		goto out;
+		//goto out;
 	}
 
 	/* read header info */
@@ -217,7 +217,7 @@ static ssize_t get_cmoffset_dump_v1(struct stm_ts_data *ts, char *buf, u8 positi
 		input_err(true, &ts->client->dev, "%s: cmoffset[%d], signature is mismatched\n",
 				__func__, position);
 		snprintf(buf, ts->proc_cmoffset_size, "signature mismatched %08X\n", signature);
-		goto out;
+		//goto out;
 	}
 
 	/* read history data */

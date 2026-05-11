@@ -21,7 +21,7 @@
 		pinctrl-1 = <&stm_attn_input>;
 		tsp_io_ldo-supply = <&fixed_regulator0>;
 		tsp_avdd_ldo-supply = <&mt_pmic_vcama2_ldo_reg>;
-		sec,irq_gpio = <SEC_GPIO_REF(AP,pio,10) 8>;
+		sec,irq_gpio = <SEC_GPIO_REF(AP,pio,10) 2>;
 		
 		/* This part is for firmware */
 		sec,project_name = "a32", "a32";

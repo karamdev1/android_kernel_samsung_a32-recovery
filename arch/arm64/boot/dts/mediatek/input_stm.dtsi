@@ -21,11 +21,12 @@
 		pinctrl-1 = <&stm_attn_input>;
 		tsp_io_ldo-supply = <&fixed_regulator0>;
 		tsp_avdd_ldo-supply = <&mt_pmic_vcama2_ldo_reg>;
-		sec,irq_gpio = <SEC_GPIO_REF(AP,pio,10) 1>;
+		sec,irq_gpio = <SEC_GPIO_REF(AP,pio,10) 8>;
 		
 		/* This part is for firmware */
 		sec,project_name = "a32", "a32";
-		sec,bringup = <0>;
+		sec,bringup = <1>;
+		sec,is_pre_bringup;
 	};
 };
 
@@ -50,7 +51,8 @@
 	//sec,firmware_name = "tsp_stm/fts5cu56a_a32.bin";
 	sec,keep_vcc_on;
 	sec,regulator_boot_on;
-	stm,lpmode_change_delay = <100>;
+	stm,lpmode_change_delay = <150>;
+	stm,delay_after_poweron = <200>;
 
 };
 
